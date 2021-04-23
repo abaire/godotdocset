@@ -10,7 +10,8 @@ optional arguments:
 ```
 
 Generating docset:
-0. pipenv install && pipenv shell
-0. Clone the appropriate branch from https://github.com/godotengine/godot
-0. `pipenv run ./godotdocset.py -f <path_to_cloned_repo> --install`
-0. Restart Dash/Zeal if it was already running.
+
+1. Clone the appropriate branch from https://github.com/godotengine/godot
+1. `pipenv install`
+1. `pipenv run ./godotdocset.py -f <path_to_cloned_repo> --install`
+1. Restart Dash/Zeal if it was already running.
