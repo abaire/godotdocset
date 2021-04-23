@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # coding: utf-8
 
 """
@@ -174,21 +174,21 @@ def get_plist(name: str):
 
 
 class DocsetMaker:
-    outname = "Godot"
-    rootdir = outname + ".docset"
-    docdir = rootdir + "/Contents/Resources/Documents"
+    docset_name = "Godot"
+    docset_bundle = docset_name + ".docset"
+    docdir = docset_bundle + "/Contents/Resources/Documents"
 
     def __enter__(self):
         os.makedirs(self.docdir)
         self.db = sqlite3.connect(
-            DocsetMaker.outname + ".docset/Contents/Resources/docSet.dsidx"
+            DocsetMaker.docset_bundle + "/Contents/Resources/docSet.dsidx"
         )
         self.db.execute(
             "CREATE TABLE searchIndex(id INTEGER PRIMARY KEY, name TEXT, type TEXT, path TEXT);"
         )
         self.db.execute("CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);")
-        with open(DocsetMaker.outname + ".docset/Contents/Info.plist", "w") as plist:
-            plist.write(get_plist(DocsetMaker.outname))
+        with open(DocsetMaker.docset_bundle + "/Contents/Info.plist", "w") as plist:
+            plist.write(get_plist(DocsetMaker.docset_name))
         self.db.execute("BEGIN")
         return self
 
@@ -234,16 +234,41 @@ def _find_class_docs(root):
     return ret
 
 
+ZEAL_INSTALL_PATH = "~/.local/share/Zeal/Zeal/docsets/"
+DASH_INSTALL_PATH = "~/Library/Application Support/Dash/DocSets/"
+def _install_docset(bundle_path):
+    install_path = os.path.expanduser(DASH_INSTALL_PATH)
+    if not os.path.isdir(install_path):
+        install_path = os.path.expanduser(ZEAL_INSTALL_PATH)
+        if not os.path.isdir(install_path):
+            exit(
+                "Failed to find local docset directory at either "
+                f"'{DASH_INSTALL_PATH}' or '{ZEAL_INSTALL_PATH}'. Is Dash/Zeal "
+                "installed?")
+    print(f"Installing generated docset to '{install_path}'")
+    target = os.path.join(install_path, bundle_path)
+    if os.path.isdir(target):
+        print(f"Deleting existing docset at '{target}'")
+        shutil.rmtree(target)
+    os.rename(bundle_path, target)
+    print(
+        "Install complete. You may need to restart Dash/Zeal (or rescan) to "
+        "enable.")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("-f", "--from", help="godot-engine repo directory", required=True)
+    ap.add_argument(
+        "-i", "--install", help="install the resulting docset", action="store_true"
+    )
     # ap.add_argument('-t', '--to', help="output folder", default='.')
     args = ap.parse_args()
     frompath = args.__dict__["from"]
 
     if not os.path.exists(frompath) or not os.path.isdir(frompath):
         exit("Directory " + frompath + " doesn't exist or is not a directory")
-    docsetdir = DocsetMaker.outname + ".docset"
+    docsetdir = DocsetMaker.docset_bundle
     if os.path.exists(docsetdir):
         print("Removing docset dir")
         shutil.rmtree(docsetdir)
@@ -276,8 +301,11 @@ def main():
             render = tpl.render(vars(dp))
             dump(render, os.path.basename(fname))
         shutil.copyfile("style.css", os.path.join(docset.docdir, "style.css"))
-        shutil.copyfile("icon.png", os.path.join(docset.rootdir, "icon.png"))
-        shutil.copyfile("icon.png", os.path.join(docset.rootdir, "icon@2.png"))
+        shutil.copyfile("icon.png", os.path.join(docset.docset_bundle, "icon.png"))
+        shutil.copyfile("icon.png", os.path.join(docset.docset_bundle, "icon@2.png"))
+
+    if args.__dict__["install"]:
+        _install_docset(DocsetMaker.docset_bundle)
 
 
 if __name__ == "__main__":
