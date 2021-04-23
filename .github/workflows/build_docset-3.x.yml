@@ -1,0 +1,45 @@
+name: Build docset for Godot 3.x nightly.
+on:
+  schedule:
+    # Nightly at 3:35 UTC.
+    # This keeps the generated HTML documentation fresh.
+    - cron: '35 3 * * *'
+    
+  workflow_dispatch:
+        
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GodocDocset
+        uses: actions/checkout@v2
+
+      - name: Checkout Godot
+        uses: actions/checkout@v2
+        with:
+          repository: godotengine/godot
+          ref: refs/heads/3.x
+          path: godot
+        
+      - name: Install Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+    
+      - name: Install dependencies
+        run: |
+          sudo pip3 install pipenv
+          pipenv install
+          
+      - name: Run godocset 
+        run: |
+          pipenv run ./godotdocset.py -f godot
+          
+      - uses: actions/upload-artifact@v2
+        with:
+          name: godot-docset-3.x
+          path: Godot.docset
+          # Keep the current build and the previous build (in case a scheduled build failed).
+          # This makes it more likely to have at least one successful build available at all times.
+          retention-days: 5

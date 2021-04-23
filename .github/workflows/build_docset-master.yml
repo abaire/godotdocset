@@ -1,9 +1,9 @@
-name: Build docsets weekly
+name: Build docset for Godot-master nightly.
 on:
   schedule:
-    # Every week on Monday at midnight (UTC).
+    # Nightly at 02:22 UTC.
     # This keeps the generated HTML documentation fresh.
-    - cron: '0 0 * * 1'
+    - cron: '22 2 * * *'
     
   workflow_dispatch:
         
@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: godotengine/godot
-          ref: refs/heads/3.x
+          ref: refs/heads/master
           path: godot
         
       - name: Install Python 3.9
@@ -38,8 +38,8 @@ jobs:
           
       - uses: actions/upload-artifact@v2
         with:
-          name: godot-docset-3.x
+          name: godot-docset-master
           path: Godot.docset
           # Keep the current build and the previous build (in case a scheduled build failed).
           # This makes it more likely to have at least one successful build available at all times.
-          retention-days: 15
+          retention-days: 5
