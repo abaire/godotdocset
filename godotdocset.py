@@ -225,9 +225,18 @@ class DocsetMaker:
             add_entry(e.name, "Subroutine", "s_" + e.name)
 
 
+def _find_class_docs(root):
+    doc_paths = glob(f"{root}/**/*.xml", recursive=True)
+
+    # Filter out anything that is not in a "classes" or "doc_classes" directory.
+    doc_re = re.compile(r"classes/[^/]+.xml$")
+    ret = [p for p in doc_paths if doc_re.search(p)]
+    return ret
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("-f", "--from", help="folder or xml file", required=True)
+    ap.add_argument("-f", "--from", help="godot-engine repo directory", required=True)
     # ap.add_argument('-t', '--to', help="output folder", default='.')
     args = ap.parse_args()
     frompath = args.__dict__["from"]
@@ -238,11 +247,17 @@ def main():
     if os.path.exists(docsetdir):
         print("Removing docset dir")
         shutil.rmtree(docsetdir)
+
+    doc_paths = _find_class_docs(frompath)
+    if not doc_paths:
+        exit(f"No Godot documentation found under {frompath}.")
+
     docpages = {}
-    for fname in glob(frompath + "/*.xml"):
+    for fname in doc_paths:
         doc = etree.parse(fname)
         print("parsing", fname)
         docpages[fname] = DocPage(doc.getroot())
+
     tpl = jinja2.Template(open(TEMPLATE).read())
     with DocsetMaker() as docset:
 
